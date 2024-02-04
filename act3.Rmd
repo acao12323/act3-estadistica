@@ -15,6 +15,12 @@ knitr::opts_chunk$set(
 
 ## Data cleaning
 
+```{r}
+df <- read.csv("mubio02_act3_alimentos_nutrientes_4900.csv")
+head(df)
+```
+
+
 ## PCA
 
 ## Modelo regresión logística
