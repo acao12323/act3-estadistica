@@ -13,15 +13,105 @@ knitr::opts_chunk$set(
 )
 ```
 
+Cargamos las librerías a utilizar
+
+```{r}
+library(tidyverse)
+library(stats)
+library(ggplot2)
+```
+
 ## Data cleaning
 
 ```{r}
+# Cargamos los datos
 df <- read.csv("mubio02_act3_alimentos_nutrientes_4900.csv")
 head(df)
 ```
 
+```{r}
+# Verificamos por datos nulos
+any(is.na(df)) # Acá vemos que sí hay datos nulos
+
+# Vemos que porcentaje representan esos nulos
+#colSums(is.na(df)) / nrow(df) * 100
+
+# Dado que solo hay nulos en 6 columnas limitamos el print a esas columnas
+colSums(is.na(
+  df[, c("estado_civil", "colesterol", "hdl", "HTA", "hipercolesterolemia", "hipertrigliceridemia")])
+  ) / nrow(df) * 100
+
+```
+
+Observamos que solo hay datos nulos en 6 columnas y que los nulos representan un porcentaje muy bajo,
+y las columnas corresponden a datos que han sido discretizados, por lo que podemos imputar estos datos por la moda.
+
+```{r}
+# Cargar la función para calcular la moda
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Columnas a procesar
+columnas <- c("estado_civil", "colesterol", "hdl", "HTA", "hipercolesterolemia", "hipertrigliceridemia")
+
+# Iterar sobre las columnas
+for (columna in columnas) {
+  # Calcular la moda de la columna actual
+  moda <- mode(df[[columna]])
+  
+  # Reemplazar valores nulos con la moda
+  df[[columna]][is.na(df[[columna]])] <- ifelse(is.na(df[[columna]]), moda, df[[columna]])
+}
+
+# Verificamos nulos
+any(is.na(df))
+
+```
+
+
+vemos que las variables de alimentos y nutrientes tienen distintas unidades de medida, por lo que hay que normalizar el dataset antes de realizar PCA, por lo tanto aplicamos una transformación con la función Scale. Para la columna diagnóstico, como será el valor a predecir se convierte en factor.
+
+```{r}
+df$Diagnostico <- as.factor(df$Diagnostico)
+```
 
 ## PCA
+
+```{r}
+# Análisis de componentes principales
+pca.results <- prcomp(df[,2:11], center=TRUE, scale = TRUE) # Scale True indica normalizar los datos
+pca.df <- data.frame(pca.results$x) # x es una matriz de los pc en orden de importancia
+
+# Calculo de la varianza acumulada
+varianzas <- pca.results$sdev^2 # sdev son las desviaciones standar de cada pc
+total.varianza <- sum(varianzas)
+varianza.explicada <- varianzas/total.varianza
+varianza.acumulada <- cumsum(varianza.explicada)
+
+# Graficamos el número de componentes prinncipales a usar
+n.pc <- min(which(varianza.acumulada > 0.95))
+n.pc
+```
+
+Dado que 5 componentes explican más del 95% de la variabilidad, se utilizarán estos
+
+```{r}
+# Graficamos los 2 primeros componentes
+ggplot(pca.df, aes(x = PC1, y = PC2, color = df$Diagnostico)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("red", "blue", "green", "orange", "purple")) +
+  labs(title = "PCA 2 primeras dimensiones",
+       x = paste0(paste("PC1",round(varianza.explicada[1]*100, 2)),'%'),
+       y = paste0(paste("PC2",round(varianza.explicada[2]*100, 2)),'%'),
+       color = "Diagnostico") +
+  theme_classic() +
+  theme(panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "gray95"),
+        plot.title=element_text(hjust=0.5))
+```
 
 ## Modelo regresión logística
 
