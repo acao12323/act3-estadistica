@@ -3,3 +3,10 @@
 
 # Ignora el docx
 *.docx
+
+# Ignorar historial de rstudio
+*.Rhistory
+
+# Ignorar historial de libreoffice
+
+*.~*
