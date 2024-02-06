@@ -19,6 +19,7 @@ Cargamos las librerías a utilizar
 library(tidyverse)
 library(stats)
 library(ggplot2)
+library(nortest)
 ```
 
 ## Data cleaning
@@ -43,11 +44,10 @@ colSums(is.na(
 
 ```
 
-Observamos que solo hay datos nulos en 6 columnas y que los nulos representan un porcentaje muy bajo,
-y las columnas corresponden a datos que han sido discretizados, por lo que podemos imputar estos datos por la moda.
+Observamos que solo hay datos nulos en 6 columnas, que los nulos representan un porcentaje muy bajo y las columnas corresponden a datos que han sido discretizados, por lo que podemos imputar estos datos por la moda.
 
 ```{r}
-# Cargar la función para calcular la moda
+# Creamos una función para calcular la moda
 mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
@@ -70,48 +70,82 @@ any(is.na(df))
 
 ```
 
-
-vemos que las variables de alimentos y nutrientes tienen distintas unidades de medida, por lo que hay que normalizar el dataset antes de realizar PCA, por lo tanto aplicamos una transformación con la función Scale. Para la columna diagnóstico, como será el valor a predecir se convierte en factor.
-
+Ahora procedemos a dar formato a las columnas discretizadas:
 ```{r}
-df$Diagnostico <- as.factor(df$Diagnostico)
+#variables <- c("sexo", "estado_civil", "tabaco", "colesterol", "hdl", "HTA", "hipercolesterolemia", "hipertrigliceridemia",
+#               "ECV_prev", "diab_prev", "hta_prev", "depres_prev", "FA_prev", "cancer_prev")
+
+#for (variable in variables) {
+#  df[[variable]] <- as.factor(df[[variable]])
+#}
+
+#head(df)
 ```
 
 ## PCA
 
 ```{r}
-# Análisis de componentes principales
-pca.results <- prcomp(df[,2:11], center=TRUE, scale = TRUE) # Scale True indica normalizar los datos
-pca.df <- data.frame(pca.results$x) # x es una matriz de los pc en orden de importancia
-
-# Calculo de la varianza acumulada
-varianzas <- pca.results$sdev^2 # sdev son las desviaciones standar de cada pc
-total.varianza <- sum(varianzas)
-varianza.explicada <- varianzas/total.varianza
-varianza.acumulada <- cumsum(varianza.explicada)
-
-# Graficamos el número de componentes prinncipales a usar
-n.pc <- min(which(varianza.acumulada > 0.95))
-n.pc
+head(df[,])
 ```
 
-Dado que 5 componentes explican más del 95% de la variabilidad, se utilizarán estos
+
+Verificamos la normalidad de los datos:
 
 ```{r}
-# Graficamos los 2 primeros componentes
-ggplot(pca.df, aes(x = PC1, y = PC2, color = df$Diagnostico)) +
-  geom_point(size = 3) +
-  scale_color_manual(values = c("red", "blue", "green", "orange", "purple")) +
-  labs(title = "PCA 2 primeras dimensiones",
-       x = paste0(paste("PC1",round(varianza.explicada[1]*100, 2)),'%'),
-       y = paste0(paste("PC2",round(varianza.explicada[2]*100, 2)),'%'),
-       color = "Diagnostico") +
-  theme_classic() +
-  theme(panel.grid.major = element_line(color = "gray90"),
-        panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = "gray95"),
-        plot.title=element_text(hjust=0.5))
+# Normalidad de los alimentos:
+# Anderson-Darling para cada columna
+
+p_values <- c() # Inicializamos un vector par guardar los p values
+variables <- unlist(colnames(df[, 28:177])) # Creamos un vector con el nombre de las columnas
+
+# Iteramos para cada alimento y nutriente aplicando el test
+for (varialble in variables) {
+  # Calculamos el test de normalidad y guardamos los p values en el vector creado
+  p_values <- c(p_values, ad.test(df[[varialble]])$p.value)
+}
+
+# Creamos un data frame
+tabla_normalidad <- data.frame(
+  "Variable"=variables,
+  "Test"=c("Anderson-Darling"),
+  "Valor p"=p_values
+  )
+
+# Interpretamos los resultados
+## Creamos una función para interpretar
+interpretador <- function(pvalue) {
+  if (pvalue < 0.05) {
+    return("Distribucion No normal")
+  } else if (pvalue > 0.05) {
+    return("Distribucion Normal")
+  } else {
+    return("No significativo")
+  }
+}
+
+## Creamos una nueva columna con la interpretación
+tabla_normalidad$Interpretacion <- interpretador(tabla_normalidad$Valor.p)
+
+# Guardamos
+write.table(tabla_normalidad, file = "tabla_normalidad.csv")
+
+# Visualizamos
+tabla_normalidad
 ```
+
+
+```{r}
+# Análisis de componentes principales
+## Ignoramos la primera columan de id
+## Scale True indica normalizar los datos
+pca.results <- prcomp(df[,2:177], scale = TRUE)
+names(pca.results)
+```
+
+```{r}
+dim(pca.results$rotation)
+```
+
 
 ## Modelo regresión logística
 
