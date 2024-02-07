@@ -17,7 +17,7 @@ Cargamos las librerías a utilizar
 
 ```{r}
 library(tidyverse)
-library(stats)
+library(FactoMineR)
 library(ggplot2)
 library(nortest)
 ```
@@ -84,11 +84,6 @@ Ahora procedemos a dar formato a las columnas discretizadas:
 
 ## PCA
 
-```{r}
-head(df[,])
-```
-
-
 Verificamos la normalidad de los datos:
 
 ```{r}
@@ -136,14 +131,71 @@ tabla_normalidad
 
 ```{r}
 # Análisis de componentes principales
-## Ignoramos la primera columan de id
-## Scale True indica normalizar los datos
-pca.results <- prcomp(df[,2:177], scale = TRUE)
-names(pca.results)
+pca.results <- PCA(X = df[,28:177], scale.unit = TRUE, graph = FALSE)
+```
+
+Calculamos la proporción de varianza explicada de cada componente (R2) y graficamos en la 2da tabla.
+
+```{r}
+# Seleccionamos la varianza explicada redondeada
+p_var <- data.frame(R2 = round(pca.results$eig[, 2],2))
+# Agregamos una columna para los componentes
+p_var$Componentes <- row.names(p_var)
+
+# Ordenamos las columnas como se nos solicita
+p_var <- p_var %>%
+  select(Componentes, R2)
+
+# Guardamos la tabla
+write.table(p_var, file = "tabla_componentes_R2.csv")
+
+# Mostramos
+p_var
 ```
 
 ```{r}
-dim(pca.results$rotation)
+# Obtener las cargas y tabularlas
+cargas <- as.data.frame(round(pca.results$var$coord,2))
+
+# Añadir información sobre las variables
+cargas$Variable <- rownames(cargas)
+
+# Imprimir las cargas tabuladas
+tabla_cargas <- cargas %>%
+  select(
+    Variable, "Componente1"=Dim.1, "Componente2"=Dim.2,
+    "Componente3"=Dim.3, "Componente4"=Dim.4, "Componente5"=Dim.5
+    )
+
+write.table(tabla_cargas, file = "Tabla_cargas.csv")
+
+tabla_cargas
+```
+
+```{r}
+# Usamos gtsummary para hacer la tabla
+tabla_descriptiva <- df_tabla4 %>%
+  tbl_strata(
+    strata = sexo, #agrupamos primero por sexo
+    .tbl_fun = ~ .x %>%
+      tbl_summary(by = categoriaIMC, #luego por la categoría de IMC
+                  # Explicación abajo
+                  type = list(starts_with("alimento") ~ "continuous"),
+                  # Calculamos los estadísticos
+                  statistic = all_continuous()~"{mean} ({sd})"
+                    ) %>%
+      # Modificamos el titulo
+      modify_header(label = "**Variables**")%>%
+      # Agregamos el test de Welch
+        add_p(
+          all_continuous()~"t.test",
+          pvalues_fun=~style_pvalue(.x, digits = 3) # 3 digitos
+          )
+    ) %>%
+  bold_labels()
+
+# Visualizamos
+tabla4
 ```
 
 
