@@ -20,6 +20,7 @@ library(tidyverse)
 library(FactoMineR)
 library(ggplot2)
 library(nortest)
+library(gtsummary)
 ```
 
 ## Data cleaning
@@ -128,13 +129,14 @@ write.table(tabla_normalidad, file = "tabla_normalidad.csv")
 tabla_normalidad
 ```
 
+Realizamos el PCA
 
 ```{r}
 # Análisis de componentes principales
 pca.results <- PCA(X = df[,28:177], scale.unit = TRUE, graph = FALSE)
 ```
 
-Calculamos la proporción de varianza explicada de cada componente (R2) y graficamos en la 2da tabla.
+Calculamos la proporción de varianza explicada de cada componente (R2) y guardamos en la 2da tabla.
 
 ```{r}
 # Seleccionamos la varianza explicada redondeada
@@ -152,6 +154,8 @@ write.table(p_var, file = "tabla_componentes_R2.csv")
 # Mostramos
 p_var
 ```
+
+Obtenemos las cargas de cada variable y guardamos en la tabla 3
 
 ```{r}
 # Obtener las cargas y tabularlas
@@ -171,6 +175,14 @@ write.table(tabla_cargas, file = "Tabla_cargas.csv")
 
 tabla_cargas
 ```
+
+Calculamos los terciles para agrupar
+
+```{r}
+
+```
+
+Usamos la librería gtsummary para hacer la tabla solicitada de variables sociodemograficas y descriptivas para agruparlas por componente y tercil.
 
 ```{r}
 # Usamos gtsummary para hacer la tabla
