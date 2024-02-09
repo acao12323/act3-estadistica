@@ -21,6 +21,7 @@ library(FactoMineR)
 library(ggplot2)
 library(nortest)
 library(gtsummary)
+library(factoextra)
 ```
 
 ## Data cleaning
@@ -73,14 +74,14 @@ any(is.na(df))
 
 Ahora procedemos a dar formato a las columnas discretizadas:
 ```{r}
-#variables <- c("sexo", "estado_civil", "tabaco", "colesterol", "hdl", "HTA", "hipercolesterolemia", "hipertrigliceridemia",
-#               "ECV_prev", "diab_prev", "hta_prev", "depres_prev", "FA_prev", "cancer_prev")
+variables <- c("sexo", "estado_civil", "tabaco", "colesterol", "hdl", "HTA", "hipercolesterolemia", "hipertrigliceridemia",
+               "ECV_prev", "diab_prev", "hta_prev", "depres_prev", "FA_prev", "cancer_prev")
 
-#for (variable in variables) {
-#  df[[variable]] <- as.factor(df[[variable]])
-#}
+for (variable in variables) {
+  df[[variable]] <- as.factor(df[[variable]])
+}
 
-#head(df)
+head(df,1)
 ```
 
 ## PCA
@@ -133,6 +134,7 @@ Realizamos el PCA
 
 ```{r}
 # Análisis de componentes principales
+# con scale.unit normalizamos los datos
 pca.results <- PCA(X = df[,28:177], scale.unit = TRUE, graph = FALSE)
 ```
 
@@ -151,37 +153,141 @@ p_var <- p_var %>%
 # Guardamos la tabla
 write.table(p_var, file = "tabla_componentes_R2.csv")
 
-# Mostramos
+# Visualizamos
 p_var
 ```
+
+Graficamos la anterior tabla
+
+```{r}
+fviz_screeplot(pca.results, addlabels = TRUE, ylim = c(0, 15))
+```
+
+Vemos como la primera componente explica el 11.2% de la varianza, lo cual es más de 7 puntos porcentuales por encima del segundo componente.
+
+Vemos el top10 variables que más contribuyen al PC1
+
+```{r}
+fviz_contrib(pca.results, choice = "var", axes = 1, top = 10, ylim = c(0,6))
+```
+
+Apreciamos que la mayoría de nutrientes contribuyen de manera similar, entre un 3% y 6% a la varianza explicada al componente principal 1. 
+
+Vemos cuántos componentes se requieren para alcanzar un 95% de la varianza explicada
+
+```{r}
+# Seleccionamos la varianza acumulada redondeada
+var_cum <- data.frame(Acumulada = round(pca.results$eig[, 3],2))
+
+# Agregamos una columna para los componentes
+var_cum$Componentes <- row.names(var_cum)
+
+# Ordenamos las columnas como se nos solicita
+var_cum <- var_cum %>%
+  select(Componentes, Acumulada)
+
+# Seleccionamos aquellos cuya varianza acumulada es mayor o igual a 95
+subset(var_cum, Acumulada>=95)
+```
+
+Vemos que para explicar el 95% de la varianza necesitaríamos 113 de los 150 componentes. Y con 130 obtenemos el 99.87%.
 
 Obtenemos las cargas de cada variable y guardamos en la tabla 3
 
 ```{r}
-# Obtener las cargas y tabularlas
+# Seleccionamos las cargas redondeadas
 cargas <- as.data.frame(round(pca.results$var$coord,2))
 
-# Añadir información sobre las variables
+# Agregamos una columna para las variables
 cargas$Variable <- rownames(cargas)
 
-# Imprimir las cargas tabuladas
+# Ordenamos las columnas como se solicitan
 tabla_cargas <- cargas %>%
   select(
     Variable, "Componente1"=Dim.1, "Componente2"=Dim.2,
     "Componente3"=Dim.3, "Componente4"=Dim.4, "Componente5"=Dim.5
     )
 
+# Guardamos la tabla
 write.table(tabla_cargas, file = "Tabla_cargas.csv")
 
+# Visualizamos
 tabla_cargas
 ```
 
-Calculamos los terciles para agrupar
-
 ```{r}
-
+unique(df$sexo)
 ```
 
+Graficas vistas en clases
+
+```{r}
+plot <- fviz_pca_ind(
+  pca.results,
+  geom = "point",
+  col.ind = df$hipercolesterolemia,
+  palette = c("red","green","blue","yellow","purple" ),
+  addEllipses = TRUE
+) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank()
+  ) +
+  labs(
+    title = "PCA visualization by hipercolesterolemia",
+    subtitle = "Principal component analysis",
+    caption = "Data Source: actividad 3"
+  )
+
+print(plot)
+```
+
+```{r}
+fviz_pca_biplot(
+  pca.results,
+  axes = c(1,2),
+  geom.ind = "point",
+  fill.ind = df$hipercolesterolemia,
+  col.ind = "black",
+  pointshape = 21,
+  pointsize = 2,
+  palette = NULL,
+  addEllipses = TRUE,
+  alpha.var = "contrib",
+  col.var = "contrib",
+  gradient.cols = c("red", "orange", "green"),
+  repel = TRUE,
+  label = "var", # cambiar a FALSE para quitar las etiquetas
+  legend.title = list(
+    fill = "Hipercolesterolemia",
+    color = "Contribución",
+    alpha = "Dirección"
+  )
+) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    legend.title = element_blank()
+  ) +
+  labs(
+    title = "PCA visualization by hipercolesterolemia",
+    subtitle = "PCA aliments and nutrients contribution",
+    caption = "Data Source: actividad 3"
+  )
+```
+
+```{r}
+head(df,1)
+```
+
+Calculamos los terciles
+
+```{r}
+# Supongamos que 'df' tiene una columna llamada 'variable'
+df$terciles <- cut(df$variable, breaks = c(-Inf, terciles, Inf), labels = c("T1", "T2", "T3"))
+
+```
 Usamos la librería gtsummary para hacer la tabla solicitada de variables sociodemograficas y descriptivas para agruparlas por componente y tercil.
 
 ```{r}
