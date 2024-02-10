@@ -22,6 +22,7 @@ library(ggplot2)
 library(nortest)
 library(gtsummary)
 library(factoextra)
+library(psych)
 ```
 
 ## Data cleaning
@@ -84,7 +85,7 @@ for (variable in variables) {
 head(df,1)
 ```
 
-## PCA
+## Principal Component Analysis
 
 Verificamos la normalidad de los datos:
 
@@ -171,7 +172,7 @@ Vemos el top10 variables que más contribuyen al PC1
 fviz_contrib(pca.results, choice = "var", axes = 1, top = 10, ylim = c(0,6))
 ```
 
-Apreciamos que la mayoría de nutrientes contribuyen de manera similar, entre un 3% y 6% a la varianza explicada al componente principal 1. 
+Apreciamos que las variables que más influyen son los nutrientes, y que los primeros 10 contribuyen de manera similar, entre un 3% y 6% a la varianza explicada al componente principal 1. 
 
 Vemos cuántos componentes se requieren para alcanzar un 95% de la varianza explicada
 
@@ -192,11 +193,17 @@ subset(var_cum, Acumulada>=95)
 
 Vemos que para explicar el 95% de la varianza necesitaríamos 113 de los 150 componentes. Y con 130 obtenemos el 99.87%.
 
+```{r}
+scree(df[, 28:177])
+```
+
+Sin embargo al graficar los eigenvalues por componente vemos que el codo se produce aproximadamente sobre los 5 componentes, por lo que tomar mucho más de ello no generará grandes cambios en explicar el comportamiento de los datos.
+
 Obtenemos las cargas de cada variable y guardamos en la tabla 3
 
 ```{r}
 # Seleccionamos las cargas redondeadas
-cargas <- as.data.frame(round(pca.results$var$coord,2))
+cargas <- as.data.frame(round(pca.results$var$cor,2))
 
 # Agregamos una columna para las variables
 cargas$Variable <- rownames(cargas)
@@ -215,33 +222,7 @@ write.table(tabla_cargas, file = "Tabla_cargas.csv")
 tabla_cargas
 ```
 
-```{r}
-unique(df$sexo)
-```
-
-Graficas vistas en clases
-
-```{r}
-plot <- fviz_pca_ind(
-  pca.results,
-  geom = "point",
-  col.ind = df$hipercolesterolemia,
-  palette = c("red","green","blue","yellow","purple" ),
-  addEllipses = TRUE
-) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    legend.title = element_blank()
-  ) +
-  labs(
-    title = "PCA visualization by hipercolesterolemia",
-    subtitle = "Principal component analysis",
-    caption = "Data Source: actividad 3"
-  )
-
-print(plot)
-```
+Graficamos en un biplot la contribución de las variables en las 2 primeras componentes y como se agrupan las observaciones en base a los grupos de hipercolesterolemia.
 
 ```{r}
 fviz_pca_biplot(
@@ -277,15 +258,46 @@ fviz_pca_biplot(
   )
 ```
 
+Apreciamos como destacan en verde los 10 compoenentes que más se relacionan, que corresponden a los nutrientes 2, 4, 7, 8, 10, 11, 12, 13, 14, 19.
+
+Con toda esta información guardamos en un dataset las variables sociodemográficas asociada a las nutrientes mencionados, los cuales son las variables más influyentes.
+
 ```{r}
 head(df,1)
+```
+
+
+```{r}
+# Seleccionamos las variables de interés
+
+df_final<- df %>%
+  select(
+    id, altura, peso, IMC, sexo, edad, estado_civil, tabaco, colesterol, hdl, HTA,
+    hipercolesterolemia, hipertrigliceridemia, ECV_prev, diab_prev, hta_prev,
+    depres_prev, FA_prev, cancer_prev, METs_h_semana, cereales, verdura,
+    fruta, pescado, legumbre, lacteos, carnes, nutriente2, nutriente4, nutriente7,
+    nutriente8, nutriente10, nutriente11, nutriente12, nutriente13, nutriente14,
+    nutriente19
+  )
+
+# Guardamos agregamos además los componentes
+df_final$componente <- pca.results$ind$coord
 ```
 
 Calculamos los terciles
 
 ```{r}
-# Supongamos que 'df' tiene una columna llamada 'variable'
-df$terciles <- cut(df$variable, breaks = c(-Inf, terciles, Inf), labels = c("T1", "T2", "T3"))
+# Calculamos los terciles en base al primer componente
+terciles <- quantile(df_final$componente[,"Dim.1"], probs = c(1/3, 2/3))
+
+# Agregamos los terciles al df_final
+df_final$terciles <- cut(
+  df_final$componente[,"Dim.1"],
+  breaks = c(-Inf, terciles, Inf),
+  labels = c("T1", "T2", "T3")
+  )
+
+
 
 ```
 Usamos la librería gtsummary para hacer la tabla solicitada de variables sociodemograficas y descriptivas para agruparlas por componente y tercil.
