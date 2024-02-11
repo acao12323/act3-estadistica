@@ -79,7 +79,7 @@ variables <- c("sexo", "estado_civil", "tabaco", "colesterol", "hdl", "HTA", "hi
                "ECV_prev", "diab_prev", "hta_prev", "depres_prev", "FA_prev", "cancer_prev")
 
 for (variable in variables) {
-  df[[variable]] <- as.factor(df[[variable]])
+  df[[variable]] <- as.character(df[[variable]])
 }
 
 head(df,1)
@@ -263,11 +263,6 @@ Apreciamos como destacan en verde los 10 compoenentes que más se relacionan, qu
 Con toda esta información guardamos en un dataset las variables sociodemográficas asociada a las nutrientes mencionados, los cuales son las variables más influyentes.
 
 ```{r}
-head(df,1)
-```
-
-
-```{r}
 # Seleccionamos las variables de interés
 
 df_final<- df %>%
@@ -297,37 +292,131 @@ df_final$terciles <- cut(
   labels = c("T1", "T2", "T3")
   )
 
+# Guardamos estos datos en un dataframe para hacer la tabla descriptiva
+df_des <- df_final %>%
+  select(-c(id,componente))
+```
 
+```{r}
+# Volvemos el df_des más descripttivo
+df_des$sexo <- ifelse(df_des$sexo == 1, "male", "female")
+df_des$ECV_prev <- ifelse(df_des$ECV_prev == 0, "no", "si")
+df_des$diab_prev <- ifelse(df_des$diab_prev == 0, "no", "si")
+df_des$hta_prev <- ifelse(df_des$hta_prev == 0, "no", "si")
+df_des$depres_prev <- ifelse(df_des$depres_prev == 0, "no", "si")
+df_des$FA_prev <- ifelse(df_des$FA_prev == 0, "no", "si")
+df_des$ECV_prev <- ifelse(df_des$ECV_prev == 0, "no", "si")
+df_des$cancer_prev <- ifelse(df_des$cancer_prev == 0, "no", "si")
+
+df_des <- df_des %>%
+  mutate(estado_civil = case_when(
+    estado_civil == 0 ~ "soltero",
+    estado_civil == 1 ~ "casado",
+    estado_civil == 2 ~ "viudo",
+    estado_civil == 3 ~ "divorciado",
+    estado_civil == 4 ~ "otro"
+  ))
+
+df_des <- df_des %>%
+  mutate(tabaco = case_when(
+    tabaco == 0 ~ "nunca",
+    tabaco == 1 ~ "fumador",
+    tabaco == 2 ~ "exfumador",
+    tabaco == 3 ~ "missing",
+    tabaco == 4 ~ "fumador+exfumador"
+  ))
+
+df_des <- df_des %>%
+  mutate(colesterol = case_when(
+    colesterol == 0 ~ "nunca",
+    colesterol == 1 ~ "<25",
+    colesterol == 2 ~ "25-44",
+    colesterol == 3 ~ "45-64",
+    colesterol == 4 ~ ">=65"
+  ))
+
+df_des <- df_des %>%
+  mutate(hdl = case_when(
+    hdl == 0 ~ "no realizado",
+    hdl == 1 ~ "no recuerdo",
+    hdl == 2 ~ "bajo",
+    hdl == 3 ~ "normal",
+    hdl == 4 ~ "alto"
+  ))
+
+df_des <- df_des %>%
+  mutate(HTA = case_when(
+    HTA == 0 ~ "nunca",
+    HTA == 1 ~ "<25",
+    HTA == 2 ~ "25-44",
+    HTA == 3 ~ "45-64",
+    HTA == 4 ~ ">=65"
+  ))
+
+df_des <- df_des %>%
+  mutate(hipercolesterolemia = case_when(
+    hipercolesterolemia == 0 ~ "nunca",
+    hipercolesterolemia == 1 ~ "<25",
+    hipercolesterolemia == 2 ~ "25-44",
+    hipercolesterolemia == 3 ~ "45-64",
+    hipercolesterolemia == 4 ~ ">=65"
+  ))
+
+df_des <- df_des %>%
+  mutate(hipertrigliceridemia = case_when(
+    hipertrigliceridemia == 0 ~ "nunca",
+    hipertrigliceridemia == 1 ~ "<25",
+    hipertrigliceridemia == 2 ~ "25-44",
+    hipertrigliceridemia == 3 ~ "45-64",
+    hipertrigliceridemia == 4 ~ ">=65"
+  ))
+
+head(df_des)
 
 ```
-Usamos la librería gtsummary para hacer la tabla solicitada de variables sociodemograficas y descriptivas para agruparlas por componente y tercil.
+
+
+Usamos la librería gtsummary para hacer la tabla solicitada de variables sociodemograficas y descriptivas para agruparlas en terciles según qué tanto partan al primer componente.
 
 ```{r}
 # Usamos gtsummary para hacer la tabla
-tabla_descriptiva <- df_tabla4 %>%
-  tbl_strata(
-    strata = sexo, #agrupamos primero por sexo
-    .tbl_fun = ~ .x %>%
-      tbl_summary(by = categoriaIMC, #luego por la categoría de IMC
-                  # Explicación abajo
-                  type = list(starts_with("alimento") ~ "continuous"),
-                  # Calculamos los estadísticos
-                  statistic = all_continuous()~"{mean} ({sd})"
-                    ) %>%
-      # Modificamos el titulo
-      modify_header(label = "**Variables**")%>%
-      # Agregamos el test de Welch
-        add_p(
-          all_continuous()~"t.test",
-          pvalues_fun=~style_pvalue(.x, digits = 3) # 3 digitos
-          )
-    ) %>%
-  bold_labels()
+df_des %>%
+  tbl_summary(by = terciles,
+              statistic = list(
+                all_continuous() ~ "{mean} ({sd})",
+                all_categorical() ~ "{n} / {N} ({p}%)"
+                ),
+              label = list(
+                estado_civil ~ "Estado civil",
+                tabaco ~ "Uso de tabaco",
+                colesterol ~ "Edad de alteracion del colesterol",
+                hdl ~ "Niveles sanguineos de hdl",
+                HTA ~ "Edad de HTA",
+                hipercolesterolemia ~ "Edad de hipercolesterolemia",
+                hipertrigliceridemia ~ "Edad de hipertrigliceridemia",
+                ECV_prev ~ "Prevalencia de ECV",
+                diab_prev ~ "Prevalencia de diabetes",
+                hta_prev ~ "Prevalencia de HTA",
+                depres_prev ~ "Prevalencia de depresion",
+                cancer_prev ~ "Prevalencia de cancer",
+                METs_h_semana ~ "Actividad fisica METs por semana",
+                cereales ~ "Consumo cereales (g/dia)",
+                verdura ~ "Consumo verduras (g/dia)",
+                fruta ~ "Consumo frutas (g/dia)",
+                pescado ~ "Consumo pescados (g/dia)",
+                legumbre ~ "Consumo legumbre (g/dia)",
+                lacteos ~ "Consumo lacteos (g/dia)",
+                carnes ~ "Consumo carnes (g/dia)"
+              ),
+              digits = all_continuous() ~ 2) %>%
+  add_p(pvalues_fun=~style_pvalue(.x, digits = 3)) %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_caption("**Table 4. Características del paciente**") %>%
+  bold_labels() %>%
+  as_gt() %>%
+  gt::tab_source_note(gt::md("*Nutrientes en mcg/dia*"))
 
-# Visualizamos
-tabla4
 ```
-
 
 ## Modelo regresión logística
 
