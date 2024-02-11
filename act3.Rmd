@@ -380,7 +380,7 @@ Usamos la librería gtsummary para hacer la tabla solicitada de variables sociod
 
 ```{r}
 # Usamos gtsummary para hacer la tabla
-df_des %>%
+tabla_descriptiva <- df_des %>%
   tbl_summary(by = terciles,
               statistic = list(
                 all_continuous() ~ "{mean} ({sd})",
@@ -408,7 +408,7 @@ df_des %>%
                 lacteos ~ "Consumo lacteos (g/dia)",
                 carnes ~ "Consumo carnes (g/dia)"
               ),
-              digits = all_continuous() ~ 2) %>%
+              digits = all_continuous() ~ 1) %>%
   add_p(pvalues_fun=~style_pvalue(.x, digits = 3)) %>%
   modify_header(label ~ "**Variables**") %>%
   modify_caption("**Table 4. Características del paciente**") %>%
@@ -416,7 +416,17 @@ df_des %>%
   as_gt() %>%
   gt::tab_source_note(gt::md("*Nutrientes en mcg/dia*"))
 
+tabla_descriptiva
+
 ```
+
+Guardamos la imagen de la tabla
+
+```{r}
+library(gt)
+gtsave(tabla_descriptiva, "./tabla_descriptiva.png")
+```
+
 
 ## Modelo regresión logística
 
