@@ -470,3 +470,25 @@ exp(confint(modelo_logistico))
 
 
 ## Conclusiones y recomendaciones
+
+La tabla 1, muestra los resultados de una prueba de normalidad para 150 variables. La prueba utilizada es la prueba de Anderson-Darling, que es una prueba no paramétrica que no requiere que los datos se distribuyan normalmente. 
+
+El valor p para cada variable es inferior a 0,005, lo que significa que hay menos de un 0,5% de posibilidades de obtener un valor p tan bajo o inferior si los datos se distribuyen realmente de forma normal. Por lo tanto, podemos concluir que hay pruebas suficientes para rechazar la hipótesis nula de que los datos se distribuyen de forma normal para todas las variables. 
+
+En otras palabras, la tabla muestra que todas las variables tienen una distribución no normal. Esto significa que no se pueden utilizar métodos estadísticos que asuman una distribución normal para analizar estos datos. 
+
+En su lugar, se deben utilizar métodos no paramétricos, que no hacen suposiciones sobre la distribución de los datos. Algunos ejemplos de métodos no paramétricos son la prueba de Mann-Whitney U para comparar dos grupos y la prueba de Kruskal-Wallis para comparar tres o más grupos.
+
+La tabla 2 y 3, muestra  
+
+Los valores de las tablas muestran la contribución de cada variable a cada componente principal. Los valores más altos indican una mayor contribución. 
+
+Por ejemplo, la variable "alimento1" tiene una contribución alta al componente 1 (0.08) y una contribución baja al componente 2 (0.27). 
+
+En la imagen, los componentes principales 1 y 2 explican el 11.22% y el 3.53% de la varianza en los datos, respectivamente. Esto significa que estos dos componentes principales capturan una gran parte de la información en el conjunto de datos original. 
+
+Las variables con valores altos en un componente principal están altamente correlacionadas con ese componente principal. Por ejemplo, la variable "alimento1" está altamente correlacionada con el componente 1. 
+
+Limitaciones: 
+
+Es importante tener en cuenta que el PCA es una técnica estadística y que no siempre es capaz de capturar toda la información en un conjunto de datos. Además, el PCA puede ser sensible a la elección de las variables utilizadas en el análisis.
