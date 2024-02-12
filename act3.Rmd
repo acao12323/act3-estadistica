@@ -442,7 +442,7 @@ df_final$terciles <- as.factor(df_final$terciles)
 
 modelo_logistico <- glm(df_final$diab_prev ~ df_final$terciles, data = df_final, family = "binomial")
 
-#evaluamos el codigo y el modelo
+#evaluamos el codigo y el modelo con los parametros vistos en clase.
 
 summary(modelo_logistico)
 coef(modelo_logistico)
