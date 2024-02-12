@@ -429,5 +429,13 @@ gtsave(tabla_descriptiva, "./tabla_descriptiva.png")
 
 
 ## Modelo regresión logística
+#Para la regresion logistica se busca detemrinar la varaible diabetes que es binaria en determinar la presencia de la enfermedad
+
+Y= 0 = sano(Ref)
+Y= 1 = diabetes
+
+# De esta forma primero determinamos los factores
+df_final$diab_prev <- as.factor(df_final$diab_prev)
+df_final$terciles <- as.factor(df_final$terciles)
 
 ## Conclusiones y recomendaciones
