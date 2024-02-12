@@ -438,4 +438,15 @@ Y= 1 = diabetes
 df_final$diab_prev <- as.factor(df_final$diab_prev)
 df_final$terciles <- as.factor(df_final$terciles)
 
+#procedemos a crear el modelo
+
+modelo_logistico <- glm(df_final$diab_prev ~ df_final$terciles, data = df_final, family = "binomial")
+
+#evaluamos el codigo y el modelo
+
+summary(modelo_logistico)
+coef(modelo_logistico)
+confint(modelo_logistico)
+exp(confint(modelo_logistico))
+
 ## Conclusiones y recomendaciones
